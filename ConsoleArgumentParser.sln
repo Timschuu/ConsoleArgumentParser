@@ -1,0 +1,22 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ConsoleArgumentParser", "ConsoleArgumentParser\ConsoleArgumentParser.csproj", "{1C4D98AF-F02C-4CE4-B73D-D7B1A5A9BC3B}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ConsoleArgumentParserTestProgram", "ConsoleArgumentParserTestProgram\ConsoleArgumentParserTestProgram.csproj", "{2EF04014-D929-433F-AE04-4BB624B58ADC}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{1C4D98AF-F02C-4CE4-B73D-D7B1A5A9BC3B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1C4D98AF-F02C-4CE4-B73D-D7B1A5A9BC3B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1C4D98AF-F02C-4CE4-B73D-D7B1A5A9BC3B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1C4D98AF-F02C-4CE4-B73D-D7B1A5A9BC3B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2EF04014-D929-433F-AE04-4BB624B58ADC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2EF04014-D929-433F-AE04-4BB624B58ADC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2EF04014-D929-433F-AE04-4BB624B58ADC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2EF04014-D929-433F-AE04-4BB624B58ADC}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal
