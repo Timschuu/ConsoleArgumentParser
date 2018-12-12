@@ -1,5 +1,6 @@
 ﻿using System.Linq;
 using ConsoleArgumentParser;
+using CommandType = ConsoleArgumentParser.CommandType;
 
 namespace ConsoleArgumentParserTestProgram
 {

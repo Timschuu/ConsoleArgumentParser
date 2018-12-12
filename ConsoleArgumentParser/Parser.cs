@@ -34,7 +34,7 @@ namespace ConsoleArgumentParser
             return true;
         }
         
-        private IEnumerable<string> GetStringsUntilNextArgument(ref int i, IReadOnlyList<string> args)
+        private IEnumerable<string> GetStringsUntilNextArgument(ref int i, List<string> args)
         {
             List<string> output = new List<string>();
             i++;
@@ -61,8 +61,9 @@ namespace ConsoleArgumentParser
 
         public bool ParseCommand(string command, IEnumerable<string> arguments)
         {
-            Type commandtype = _registeredCommands.FirstOrDefault(c => (c.Command.GetCustomAttribute(typeof(CommandAttribute)) as CommandAttribute)
-                                                                       ?.Name == command)?.Command;
+            Type commandtype = _registeredCommands.FirstOrDefault(c => c.Command.GetCustomAttributes(typeof(CommandAttribute), true)
+                                                                           .FirstOrDefault(a => ((CommandAttribute) a)
+                                                                                ?.Name == command) != null)?.Command;
             if (commandtype == null)
             {
                 OnUnknownCommand();
@@ -97,8 +98,11 @@ namespace ConsoleArgumentParser
                 }
 
                 List<string> subcommandargs = GetStringsUntilNextArgument(ref j, arglist).ToList();
-                MethodInfo mi = cmd.GetType().GetMethods(BindingFlags.Instance | BindingFlags.NonPublic).FirstOrDefault(m =>
-                    (m.GetCustomAttribute(typeof(CommandArgumentAttribute)) as CommandArgumentAttribute)?.Name == arg);
+                MethodInfo mi = cmd.GetType()
+                    .GetMethods(BindingFlags.Instance | BindingFlags.NonPublic)
+                    .FirstOrDefault(m => m
+                    .GetCustomAttributes(typeof(CommandArgumentAttribute), true)
+                    .FirstOrDefault(a => ((CommandArgumentAttribute) a)?.Name == arg) != null);
 
                 if (mi == null)
                 {
