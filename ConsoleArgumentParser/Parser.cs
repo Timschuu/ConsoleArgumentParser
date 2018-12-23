@@ -83,7 +83,7 @@ namespace ConsoleArgumentParser
                     line += $"[{subCommand.GetAttributeValue((CommandArgumentAttribute caa) => caa.Name)} ";
                     line = subCommand.GetParameters().Aggregate(line, (current, parameter) => current + parameter.Name + " ");
                     line = line.Trim();
-                    line += "]";
+                    line += "] ";
                 }
 
                 line += "\n\t";

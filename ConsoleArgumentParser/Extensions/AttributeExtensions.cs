@@ -28,7 +28,7 @@ namespace ConsoleArgumentParser.Extensions
         public static List<MethodInfo> GetSubCommands(this Type command)
         {
             return command.GetMethods(BindingFlags.Instance | BindingFlags.NonPublic)
-                .Where(m => m.GetCustomAttributes(typeof(CommandAttribute), true).Length > 0).ToList();
+                .Where(m => m.GetCustomAttributes(typeof(CommandArgumentAttribute), true).Length > 0).ToList();
         }
     }
 }
