@@ -107,8 +107,8 @@ namespace ConsoleArgumentParser
                 MethodInfo mi = cmd.GetType()
                     .GetMethods(BindingFlags.Instance | BindingFlags.NonPublic)
                     .FirstOrDefault(m => m
-                                             .GetCustomAttributes(typeof(CommandArgumentAttribute), true)
-                                             .FirstOrDefault(a => ((CommandArgumentAttribute) a)?.Name == arg) != null);
+                    .GetCustomAttributes(typeof(CommandArgumentAttribute), true)
+                    .FirstOrDefault(a => ((CommandArgumentAttribute) a)?.Name == arg) != null);
 
                 if (mi == null)
                 {
@@ -132,9 +132,9 @@ namespace ConsoleArgumentParser
             return true;
         }
         
-        private readonly Dictionary<Type, Func<Action<ParserErrorArgs>, string, string, object>> _typeParsingSwitch = new Dictionary<Type, Func<Action<ParserErrorArgs>, string, string, object>>
+        private readonly Dictionary<Type, Func<Action<ParserErrorArgs>, string, string, Type, object>> _typeParsingSwitch = new Dictionary<Type, Func<Action<ParserErrorArgs>, string, string, Type, object>>
         {
-            {typeof(int), (action, command, s) =>
+            {typeof(int), (action, command, s, _) =>
             {
                 if (!int.TryParse(s, out int val))
                 {
@@ -143,7 +143,7 @@ namespace ConsoleArgumentParser
 
                 return val;
             }},
-            {typeof(float), (action, command, s) =>
+            {typeof(float), (action, command, s, _) =>
             {
                 if (!float.TryParse(s, out float val))
                 {
@@ -152,7 +152,7 @@ namespace ConsoleArgumentParser
 
                 return val;
             }},
-            {typeof(double), (action, command, s) =>
+            {typeof(double), (action, command, s, _) =>
             {
                 if (!double.TryParse(s, out double val))
                 {
@@ -161,16 +161,25 @@ namespace ConsoleArgumentParser
 
                 return val;
             }},
-            {typeof(string), (action, command, s) => s},
-            {typeof(bool), (action, command, s) =>
-             {
+            {typeof(string), (action, command, s, _) => s},
+            {typeof(bool), (action, command, s, _) =>
+            {
                 if (!bool.TryParse(s, out bool val))
                 {
                     action(new ParserErrorArgs(command));
                 }
 
                 return val;
-             }}
+            }},
+            {typeof(Enum), (action, command, s, type) =>
+            {
+                if (!Enum.TryParse(type, s, true, out object val))
+                {
+                    action(new ParserErrorArgs(command));
+                }
+
+                return val;
+            }}
         };
 
         private List<object> ParseArguments(IReadOnlyList<string> args, IReadOnlyList<ParameterInfo> expectedParameters, string currentcommmand)
@@ -178,12 +187,19 @@ namespace ConsoleArgumentParser
             List<object> parsedArgs = new List<object>();
             for (int i = 0; i < args.Count; i++)
             {
-                if (!_typeParsingSwitch.ContainsKey(expectedParameters[i].ParameterType))
+                Type expectedType = expectedParameters[i].ParameterType;
+                Type parsingTarget = expectedType;
+                if (expectedType.BaseType == typeof(Enum))
+                {
+                    expectedType = typeof(Enum);
+                }
+                if (!_typeParsingSwitch.ContainsKey(expectedType))
                 {
                     OnArgumentParsingError(new ParserErrorArgs(currentcommmand));
+                    return null;
                 }
 
-                parsedArgs.Add(_typeParsingSwitch[expectedParameters[i].ParameterType](OnArgumentParsingError, currentcommmand, args[i]));
+                parsedArgs.Add(_typeParsingSwitch[expectedType](OnArgumentParsingError, currentcommmand, args[i], parsingTarget));
             }
 
             return parsedArgs;

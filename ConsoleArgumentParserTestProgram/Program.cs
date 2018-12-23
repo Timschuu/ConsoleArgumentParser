@@ -1,4 +1,5 @@
-﻿using System.Linq;
+﻿using System;
+using System.Linq;
 using ConsoleArgumentParser;
 using CommandType = ConsoleArgumentParser.CommandType;
 
@@ -9,6 +10,9 @@ namespace ConsoleArgumentParserTestProgram
         public static void Main(string[] args)
         {
             Parser parser = new Parser("-", "--");
+            parser.ArgumentParsingError += (sender, errorArgs) => { Console.WriteLine($"Parser error in command [{errorArgs.Command}"); };
+                
+            
             parser.RegisterCommand(new CommandType(typeof(TestCommand), "this is a test command")); 
 
 

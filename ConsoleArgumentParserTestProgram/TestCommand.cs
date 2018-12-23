@@ -19,10 +19,24 @@ namespace ConsoleArgumentParserTestProgram
 
             Console.WriteLine(_message);
         }
+        
+        public enum Color
+        {
+            Red,
+            Blue,
+            Green,
+            Yellow
+        }
 
         public TestCommand(string text)
         {
             _message = text;
+        }
+
+        [CommandArgument("--enum")]
+        private void EnumSubCommand(Color color)
+        {
+            Console.WriteLine(color.ToString());
         }
 
         [CommandArgument("--r")]
