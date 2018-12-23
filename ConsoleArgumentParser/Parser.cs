@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using ConsoleArgumentParser.Extensions;
 using ConsoleArgumentParser.Interfaces;
 using ConsoleArgumentParser.TypeParsers;
 // ReSharper disable EventNeverSubscribedTo.Global
@@ -17,24 +18,24 @@ namespace ConsoleArgumentParser
         public event EventHandler<EventArgs> UnknownCommand;
         public event EventHandler<ParserErrorArgs> ArgumentParsingError;
         
-        private readonly List<CommandType> _registeredCommands;
+        private readonly List<Type> _registeredCommands;
         private readonly string _commandPrefix;
         private readonly string _subcommandPrefix;
 
         public Parser(string commandPrefix, string subcommandPrefix)
         {
-            _registeredCommands = new List<CommandType>();
+            _registeredCommands = new List<Type>();
             _commandPrefix = commandPrefix;
             _subcommandPrefix = subcommandPrefix;
         }
 
-        public bool RegisterCommand(CommandType commandType)
+        public bool RegisterCommand(Type command)
         {
-            if (!commandType.Command.IsClass || !commandType.Command.GetInterfaces().Contains(typeof(ICommand)))
+            if (!command.IsClass || !command.GetInterfaces().Contains(typeof(ICommand)))
             {
                 return false;
             }
-            _registeredCommands.Add(commandType);
+            _registeredCommands.Add(command);
             return true;
         }
         
@@ -55,19 +56,48 @@ namespace ConsoleArgumentParser
         public string GetHelpString()
         {
             string output = "";
-            foreach (CommandType registeredCommand in _registeredCommands)
+            foreach (Type registeredCommand in _registeredCommands)
             {
-                output += registeredCommand.Helptext + "\n";
+                string line = "";
+                string name = registeredCommand.GetAttributeValue((CommandAttribute ca) => ca.Name);
+                string description = registeredCommand.GetAttributeValue((CommandAttribute ca) => ca.Description);
+                ConstructorInfo constructorInfo = registeredCommand.GetConstructors()[0];
+                List<ParameterInfo> ctorparas = constructorInfo.GetParameters().ToList();
+
+                List<MethodInfo> subCommands = registeredCommand.GetSubCommands();
+                
+                line += name + " ";
+                foreach (var ctorpara in ctorparas)
+                {
+                    line += ctorpara.Name;
+                    if (IsParams(ctorpara))
+                    {
+                        line += "[s]";
+                    }
+
+                    line += " ";
+                }
+
+                foreach (var subCommand in subCommands)
+                {
+                    line += $"[{subCommand.GetAttributeValue((CommandArgumentAttribute caa) => caa.Name)} ";
+                    line = subCommand.GetParameters().Aggregate(line, (current, parameter) => current + parameter.Name + " ");
+                    line = line.Trim();
+                    line += "]";
+                }
+
+                line += "\n\t";
+                line += description;
+                output += line + "\n";
             }
 
             return output;
         }
-
+        
         public bool ParseCommand(string command, IEnumerable<string> arguments)
         {
-            Type commandtype = _registeredCommands.FirstOrDefault(c => c.Command.GetCustomAttributes(typeof(CommandAttribute), true)
-                                                                           .FirstOrDefault(a => ((CommandAttribute) a)
-                                                                                                ?.Name == command) != null)?.Command;
+            Type commandtype = _registeredCommands.FirstOrDefault(c => c.GetCustomAttributes(typeof(CommandAttribute), true)
+                .FirstOrDefault(a => ((CommandAttribute) a)?.Name == command) != null);
             if (commandtype == null)
             {
                 OnUnknownCommand();

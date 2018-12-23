@@ -1,22 +1,22 @@
 ﻿using System;
 using System.Linq;
 using ConsoleArgumentParser;
-using CommandType = ConsoleArgumentParser.CommandType;
 
 namespace ConsoleArgumentParserTestProgram
 {
     internal class Program
     {
+        public static Parser Parser { get; set; }
         public static void Main(string[] args)
         {
-            Parser parser = new Parser("-", "--");
-            parser.ArgumentParsingError += (sender, errorArgs) => { Console.WriteLine($"Parser error in command [{errorArgs.Command}"); };
+            Parser = new Parser("-", "--");
+            Parser.ArgumentParsingError += (sender, errorArgs) => { Console.WriteLine($"Parser error in command {errorArgs.Command}"); };
                 
             
-            parser.RegisterCommand(new CommandType(typeof(TestCommand), "this is a test command")); 
+            Parser.RegisterCommand(typeof(TestCommand));
+            Parser.RegisterCommand(typeof(HelpCommand));
 
-
-            parser.ParseCommand(args[0], args.ToList().GetRange(1, args.Length - 1));
+            Parser.ParseCommand(args[0], args.ToList().GetRange(1, args.Length - 1));
         }
     }
 }

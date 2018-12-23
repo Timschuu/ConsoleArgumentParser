@@ -4,7 +4,7 @@ using ConsoleArgumentParser;
 
 namespace ConsoleArgumentParserTestProgram
 {
-    [Command("-w")]
+    [Command("-w", "Tests something.")]
     public class TestCommand : ConsoleArgumentParser.Interfaces.ICommand
     {
         private readonly string _message;
