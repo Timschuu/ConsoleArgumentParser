@@ -1,11 +1,11 @@
 using System;
 using ConsoleArgumentParser;
-using ICommand = ConsoleArgumentParser.ICommand;
+// ReSharper disable UnusedMember.Local
 
 namespace ConsoleArgumentParserTestProgram
 {
     [Command("-w")]
-    public class TestCommand : ICommand
+    public class TestCommand : ConsoleArgumentParser.Interfaces.ICommand
     {
         private readonly string _message;
         private bool _red;
@@ -20,7 +20,7 @@ namespace ConsoleArgumentParserTestProgram
             Console.WriteLine(_message);
         }
         
-        public enum Color
+        private enum Color
         {
             Red,
             Blue,

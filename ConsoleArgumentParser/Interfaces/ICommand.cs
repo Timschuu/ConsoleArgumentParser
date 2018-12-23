@@ -1,4 +1,4 @@
-﻿namespace ConsoleArgumentParser
+﻿namespace ConsoleArgumentParser.Interfaces
 {
     public interface ICommand
     {
