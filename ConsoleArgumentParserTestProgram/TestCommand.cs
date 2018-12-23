@@ -1,14 +1,13 @@
-﻿using System;
-using System.Collections.Generic;
+using System;
 using ConsoleArgumentParser;
-using ICommand = ConsoleArgumentParser.ICommand;
+// ReSharper disable UnusedMember.Local
 
 namespace ConsoleArgumentParserTestProgram
 {
-    [Command("-w")]
-    public class TestCommand : ICommand
+    [Command("-w", "Tests something.")]
+    public class TestCommand : ConsoleArgumentParser.Interfaces.ICommand
     {
-        private readonly List<string> _messages;
+        private readonly string _message;
         private bool _red;
         
         public void Execute()
@@ -17,22 +16,19 @@ namespace ConsoleArgumentParserTestProgram
             {
                 Console.ForegroundColor = ConsoleColor.Red;
             }
-            foreach (string message in _messages)
-            {
-                Console.WriteLine(message);
-            }
+
+            Console.WriteLine(_message);
         }
 
-        public TestCommand(IEnumerable<string> args)
+        public TestCommand(params object[] text)
         {
-            _messages = new List<string>();
-            _messages.AddRange(args);
+            _message = (string)text[0];
         }
 
         [CommandArgument("--r")]
-        private void RedSubCommand(IEnumerable<string> args)
+        private void RedSubCommand(bool red)
         {
-            _red = true;
+            _red = red;
         }
     }
 }
