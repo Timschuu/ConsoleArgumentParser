@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+
 // ReSharper disable UnusedMember.Global
 // ReSharper disable UnusedMethodReturnValue.Global
 
@@ -11,7 +12,8 @@ namespace ConsoleArgumentParser
     {
         public event EventHandler<ParserErrorArgs> WrongCommandUsage;
         public event EventHandler<ParserErrorArgs> InvalidSubCommand;
-        public event EventHandler<EventArgs> UnknownCommand; 
+        public event EventHandler<EventArgs> UnknownCommand;
+        public event EventHandler<ParserErrorArgs> ArgumentParsingError;
         
         private readonly List<CommandType> _registeredCommands;
         private readonly string _commandPrefix;
@@ -63,7 +65,7 @@ namespace ConsoleArgumentParser
         {
             Type commandtype = _registeredCommands.FirstOrDefault(c => c.Command.GetCustomAttributes(typeof(CommandAttribute), true)
                                                                            .FirstOrDefault(a => ((CommandAttribute) a)
-                                                                                ?.Name == command) != null)?.Command;
+                                                                                                ?.Name == command) != null)?.Command;
             if (commandtype == null)
             {
                 OnUnknownCommand();
@@ -85,8 +87,12 @@ namespace ConsoleArgumentParser
                 stringsuntilnextarg.Add(arglist[i]);
             }
             arglist.RemoveRange(0, i);
+
+            List<ParameterInfo> ctorParas = constructorInfo.GetParameters().ToList();
+
+            object[] ctorInvokingArgs = ParseArguments(stringsuntilnextarg, ctorParas, command).ToArray();
             
-            ICommand cmd = (ICommand) constructorInfo.Invoke(new object[] { stringsuntilnextarg });
+            ICommand cmd = (ICommand) constructorInfo.Invoke(ctorInvokingArgs);
             
             for (int j = 0; j < arglist.Count; j++)
             {
@@ -101,21 +107,93 @@ namespace ConsoleArgumentParser
                 MethodInfo mi = cmd.GetType()
                     .GetMethods(BindingFlags.Instance | BindingFlags.NonPublic)
                     .FirstOrDefault(m => m
-                    .GetCustomAttributes(typeof(CommandArgumentAttribute), true)
-                    .FirstOrDefault(a => ((CommandArgumentAttribute) a)?.Name == arg) != null);
+                                             .GetCustomAttributes(typeof(CommandArgumentAttribute), true)
+                                             .FirstOrDefault(a => ((CommandArgumentAttribute) a)?.Name == arg) != null);
 
                 if (mi == null)
                 {
                     OnInvalidSubCommand( new ParserErrorArgs(command) {Subcommand = arg});
                     return false;
                 }
+                
+                List<ParameterInfo> parameterInfos = mi.GetParameters().ToList();
 
-                mi.Invoke(cmd, new object[] {subcommandargs});
+                if (parameterInfos.Count != subcommandargs.Count)
+                {
+                    OnWrongCommandUsage(new ParserErrorArgs(command));
+                    return false;
+                }
+
+                object[] invokingargs = ParseArguments(subcommandargs, parameterInfos, command).ToArray();
+                
+                mi.Invoke(cmd, invokingargs);
             }
             cmd.Execute();
             return true;
         }
+        
+        private readonly Dictionary<Type, Func<Action<ParserErrorArgs>, string, string, object>> _typeParsingSwitch = new Dictionary<Type, Func<Action<ParserErrorArgs>, string, string, object>>
+        {
+            {typeof(int), (action, command, s) =>
+            {
+                if (!int.TryParse(s, out int val))
+                {
+                    action(new ParserErrorArgs(command));
+                }
 
+                return val;
+            }},
+            {typeof(float), (action, command, s) =>
+            {
+                if (!float.TryParse(s, out float val))
+                {
+                    action(new ParserErrorArgs(command));
+                }
+
+                return val;
+            }},
+            {typeof(double), (action, command, s) =>
+            {
+                if (!double.TryParse(s, out double val))
+                {
+                    action(new ParserErrorArgs(command));
+                }
+
+                return val;
+            }},
+            {typeof(string), (action, command, s) => s},
+            {typeof(bool), (action, command, s) =>
+             {
+                if (!bool.TryParse(s, out bool val))
+                {
+                    action(new ParserErrorArgs(command));
+                }
+
+                return val;
+             }}
+        };
+
+        private List<object> ParseArguments(IReadOnlyList<string> args, IReadOnlyList<ParameterInfo> expectedParameters, string currentcommmand)
+        {
+            List<object> parsedArgs = new List<object>();
+            for (int i = 0; i < args.Count; i++)
+            {
+                if (!_typeParsingSwitch.ContainsKey(expectedParameters[i].ParameterType))
+                {
+                    OnArgumentParsingError(new ParserErrorArgs(currentcommmand));
+                }
+
+                parsedArgs.Add(_typeParsingSwitch[expectedParameters[i].ParameterType](OnArgumentParsingError, currentcommmand, args[i]));
+            }
+
+            return parsedArgs;
+        }
+
+        private void OnArgumentParsingError(ParserErrorArgs e)
+        {
+            ArgumentParsingError?.Invoke(this, e);
+        }
+        
         private void OnWrongCommandUsage(ParserErrorArgs e)
         {
             WrongCommandUsage?.Invoke(this, e);

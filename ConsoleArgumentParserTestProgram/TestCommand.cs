@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using ConsoleArgumentParser;
 using ICommand = ConsoleArgumentParser.ICommand;
 
@@ -8,7 +7,7 @@ namespace ConsoleArgumentParserTestProgram
     [Command("-w")]
     public class TestCommand : ICommand
     {
-        private readonly List<string> _messages;
+        private readonly string _message;
         private bool _red;
         
         public void Execute()
@@ -17,22 +16,19 @@ namespace ConsoleArgumentParserTestProgram
             {
                 Console.ForegroundColor = ConsoleColor.Red;
             }
-            foreach (string message in _messages)
-            {
-                Console.WriteLine(message);
-            }
+
+            Console.WriteLine(_message);
         }
 
-        public TestCommand(IEnumerable<string> args)
+        public TestCommand(string text)
         {
-            _messages = new List<string>();
-            _messages.AddRange(args);
+            _message = text;
         }
 
         [CommandArgument("--r")]
-        private void RedSubCommand(IEnumerable<string> args)
+        private void RedSubCommand(bool red)
         {
-            _red = true;
+            _red = red;
         }
     }
 }
