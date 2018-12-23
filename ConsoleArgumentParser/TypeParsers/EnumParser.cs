@@ -5,14 +5,16 @@ namespace ConsoleArgumentParser.TypeParsers
 {
     public class EnumParser : ITypeParser
     {
-        public object Parse(string s, Type targettype)
+        public bool TryParse(string s, Type targettype, out object value)
         {
+            value = default(object);
             if (!Enum.TryParse(targettype, s, true, out object val))
             {
-                throw new TypeParsingException();
+                return false;
             }
 
-            return val;
+            value = val;
+            return true;
         }
     }
 }

@@ -5,9 +5,10 @@ namespace ConsoleArgumentParser.TypeParsers
 {
     public class StringParser : ITypeParser
     {
-        public object Parse(string s, Type targettype)
+        public bool TryParse(string s, Type targettype, out object value)
         {
-            return s;
+            value = s;
+            return true;
         }
     }
 }

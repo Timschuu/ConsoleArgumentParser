@@ -4,7 +4,7 @@ using System.Linq;
 using System.Reflection;
 using ConsoleArgumentParser.Interfaces;
 using ConsoleArgumentParser.TypeParsers;
-
+// ReSharper disable EventNeverSubscribedTo.Global
 // ReSharper disable UnusedMember.Global
 // ReSharper disable UnusedMethodReturnValue.Global
 
@@ -92,7 +92,13 @@ namespace ConsoleArgumentParser
 
             List<ParameterInfo> ctorParas = constructorInfo.GetParameters().ToList();
 
-            object[] ctorInvokingArgs = ParseArguments(stringsuntilnextarg, ctorParas, command, null).ToArray();
+            object[] ctorInvokingArgs = ParseArguments(stringsuntilnextarg, ctorParas, command, null)?.ToArray();
+
+            if (ctorInvokingArgs == null)
+            {
+                OnWrongCommandUsage(new ParserErrorArgs(command));
+                return false;
+            }
             
             ICommand cmd = (ICommand) constructorInfo.Invoke(ctorInvokingArgs);
             
@@ -114,19 +120,19 @@ namespace ConsoleArgumentParser
 
                 if (mi == null)
                 {
-                    OnInvalidSubCommand( new ParserErrorArgs(command) {Subcommand = subcommand});
+                    OnInvalidSubCommand( new ParserErrorArgs(command, subcommand));
                     return false;
                 }
                 
                 List<ParameterInfo> parameterInfos = mi.GetParameters().ToList();
 
-                if (parameterInfos.Count != subcommandargs.Count)
+                object[] invokingargs = ParseArguments(subcommandargs, parameterInfos, command, subcommand)?.ToArray();
+
+                if (invokingargs == null)
                 {
-                    OnWrongCommandUsage(new ParserErrorArgs(command));
+                    OnWrongCommandUsage(new ParserErrorArgs(command, subcommand));
                     return false;
                 }
-
-                object[] invokingargs = ParseArguments(subcommandargs, parameterInfos, command, subcommand).ToArray();
                 
                 mi.Invoke(cmd, invokingargs);
             }
@@ -165,23 +171,39 @@ namespace ConsoleArgumentParser
                 {
                     expectedType = typeof(Enum);
                 }
+
+                if (i == expectedParameters.Count - 1 && IsParams(expectedParameters[i]))
+                {
+                    List<object> paramList = new List<object>();
+                    for (; i < args.Count; i++)
+                    {
+                        paramList.Add(args[i]);
+                    }
+
+                    parsedArgs.Add(paramList.ToArray());
+                    break;
+                }
+                
                 if (!_typeParsingSwitch.ContainsKey(expectedType))
                 {
                     OnArgumentParsingError(new ParserErrorArgs(currentcommmand));
                     return null;
                 }
-
-                try
-                {
-                    parsedArgs.Add(_typeParsingSwitch[expectedType].Parse(args[i], parsingTarget));
-                }
-                catch (TypeParsingException)
+                
+                if (!_typeParsingSwitch[expectedType].TryParse(args[i], parsingTarget, out var parsedPara))
                 {
                     OnArgumentParsingError(new ParserErrorArgs(currentcommmand, currentsubcommand));
+                    return null;
                 }
+                parsedArgs.Add(parsedPara);
             }
 
             return parsedArgs;
+        }
+        
+        private static bool IsParams(ParameterInfo param)
+        {
+            return param.GetCustomAttributes(typeof (ParamArrayAttribute), false).Length > 0;
         }
 
         private void OnArgumentParsingError(ParserErrorArgs e)

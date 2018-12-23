@@ -28,9 +28,9 @@ namespace ConsoleArgumentParserTestProgram
             Yellow
         }
 
-        public TestCommand(string text)
+        public TestCommand(params object[] text)
         {
-            _message = text;
+            _message = (string)text[0];
         }
 
         [CommandArgument("--enum")]
