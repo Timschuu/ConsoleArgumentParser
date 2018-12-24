@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using ConsoleArgumentParser;
 // ReSharper disable UnusedMember.Local
 
@@ -8,41 +9,23 @@ namespace ConsoleArgumentParserTestProgram
     public class TestCommand : ConsoleArgumentParser.Interfaces.ICommand
     {
         private readonly string _message;
-        private bool _red;
-        
+        private ConsoleColor _color;
+
         public void Execute()
         {
-            if (_red)
-            {
-                Console.ForegroundColor = ConsoleColor.Red;
-            }
-
+            Console.ForegroundColor = _color;
             Console.WriteLine(_message);
-        }
-        
-        private enum Color
-        {
-            Red,
-            Blue,
-            Green,
-            Yellow
         }
 
         public TestCommand(params object[] text)
         {
-            _message = (string)text[0];
+            _message = Array.ConvertAll(text, input => (string) input).Aggregate("", (current, next) => current + next + " ");
         }
 
-        [CommandArgument("--enum")]
-        private void EnumSubCommand(Color color)
+        [CommandArgument("--color")]
+        private void EnumSubCommand(ConsoleColor color)
         {
-            Console.WriteLine(color.ToString());
-        }
-
-        [CommandArgument("--r")]
-        private void RedSubCommand(bool red)
-        {
-            _red = red;
+            _color = color;
         }
     }
 }

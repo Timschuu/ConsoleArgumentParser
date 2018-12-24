@@ -131,7 +131,18 @@ namespace ConsoleArgumentParser
             }
             
             ICommand cmd = (ICommand) constructorInfo.Invoke(ctorInvokingArgs);
+
+            if (!ParseSubCommands(arglist, command, cmd))
+            {
+                return false;
+            }
             
+            cmd.Execute();
+            return true;
+        }
+
+        private bool ParseSubCommands(List<string> arglist, string command, ICommand cmd)
+        {
             for (int j = 0; j < arglist.Count; j++)
             {
                 string subcommand = arglist[j];
@@ -145,8 +156,8 @@ namespace ConsoleArgumentParser
                 MethodInfo mi = cmd.GetType()
                     .GetMethods(BindingFlags.Instance | BindingFlags.NonPublic)
                     .FirstOrDefault(m => m
-                    .GetCustomAttributes(typeof(CommandArgumentAttribute), true)
-                    .FirstOrDefault(a => ((CommandArgumentAttribute) a)?.Name == subcommand) != null);
+                                             .GetCustomAttributes(typeof(CommandArgumentAttribute), true)
+                                             .FirstOrDefault(a => ((CommandArgumentAttribute) a)?.Name == subcommand) != null);
 
                 if (mi == null)
                 {
@@ -166,7 +177,7 @@ namespace ConsoleArgumentParser
                 
                 mi.Invoke(cmd, invokingargs);
             }
-            cmd.Execute();
+
             return true;
         }
 
