@@ -1,12 +1,11 @@
 ﻿using System;
-using System.Linq;
 using ConsoleArgumentParser;
 
 namespace ConsoleArgumentParserTestProgram
 {
     internal class Program
     {
-        public static Parser Parser { get; set; }
+        public static Parser Parser { get; private set; }
         public static void Main(string[] args)
         {
             Parser = new Parser("-", "--");
@@ -19,7 +18,7 @@ namespace ConsoleArgumentParserTestProgram
             Parser.RegisterCommand(typeof(TestCommand));
             Parser.RegisterCommand(typeof(HelpCommand));
 
-            Parser.ParseCommand(args[0], args.ToList().GetRange(1, args.Length - 1));
+            Parser.ParseCommands(args);
         }
     }
 }

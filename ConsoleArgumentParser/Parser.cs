@@ -93,6 +93,29 @@ namespace ConsoleArgumentParser
 
             return output;
         }
+
+        private IEnumerable<string> GetArgsUntilNextArgument(ref int i, IReadOnlyList<string> args)
+        {
+            List<string> argslList = new List<string>();
+            i++;
+            while (i < args.Count && (!args[i].StartsWith(_commandPrefix) || args[i].StartsWith(_subcommandPrefix)))
+            {
+                argslList.Add(args[i]);
+                i++;
+            }
+
+            i--;
+            return argslList;
+        }
+        
+        public void ParseCommands(IEnumerable<string> args)
+        {
+            string[] arguments = args.ToArray();
+            for (int i = 0; i < arguments.Length; i++)
+            {
+                ParseCommand(arguments[i], GetArgsUntilNextArgument(ref i, arguments));
+            }
+        }
         
         public bool ParseCommand(string command, IEnumerable<string> arguments)
         {
