@@ -9,7 +9,7 @@ namespace ConsoleArgumentParserTestProgram
     public class TestCommand : ConsoleArgumentParser.Interfaces.ICommand
     {
         private readonly string _message;
-        private ConsoleColor _color;
+        private ConsoleColor _color = ConsoleColor.White;
 
         public void Execute()
         {
@@ -26,6 +26,12 @@ namespace ConsoleArgumentParserTestProgram
         private void EnumSubCommand(ConsoleColor color)
         {
             _color = color;
+        }
+
+        [CommandArgument("--int")]
+        private void IntSubCommand(int int1, int int2)
+        {
+            Console.WriteLine(int1 + int2);
         }
     }
 }

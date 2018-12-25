@@ -13,6 +13,7 @@ namespace ConsoleArgumentParserTestProgram
             {
                 Console.WriteLine($"Parser error in command {errorArgs.Command}" + (errorArgs.Subcommand != null ? $" (subcommand {errorArgs.Subcommand})" : ""));
             };
+            Parser.WrongCommandUsage += (s, e) => Console.WriteLine("Invalid command usage on command " + e.Command);
                 
             
             Parser.RegisterCommand(typeof(TestCommand));

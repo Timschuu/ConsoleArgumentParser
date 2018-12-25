@@ -226,6 +226,10 @@ namespace ConsoleArgumentParser
 
         private List<object> ParseArguments(IReadOnlyList<string> args, IReadOnlyList<ParameterInfo> expectedParameters, string currentcommmand, string currentsubcommand)
         {
+            if (args.Count < expectedParameters.Count)
+            {
+                return null;
+            }
             List<object> parsedArgs = new List<object>();
             for (int i = 0; i < args.Count; i++)
             {
