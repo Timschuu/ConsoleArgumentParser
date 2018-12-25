@@ -220,7 +220,6 @@ namespace ConsoleArgumentParser
             {typeof(float), new FloatParser()},
             {typeof(double), new DoubleParser()},
             {typeof(string), new StringParser()},
-            {typeof(Enum), new EnumParser()},
             {typeof(bool), new BoolParser()}
         };
 
