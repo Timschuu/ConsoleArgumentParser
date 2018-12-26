@@ -149,7 +149,6 @@ namespace ConsoleArgumentParser
 
             if (ctorInvokingArgs == null)
             {
-                OnWrongCommandUsage(new ParserErrorArgs(command));
                 return false;
             }
             
@@ -194,7 +193,6 @@ namespace ConsoleArgumentParser
 
                 if (invokingargs == null)
                 {
-                    OnWrongCommandUsage(new ParserErrorArgs(command, subcommand));
                     return false;
                 }
                 
@@ -227,6 +225,7 @@ namespace ConsoleArgumentParser
         {
             if (args.Count < expectedParameters.Count)
             {
+                OnWrongCommandUsage(new ParserErrorArgs(currentcommmand, currentsubcommand));
                 return null;
             }
             List<object> parsedArgs = new List<object>();
@@ -239,7 +238,9 @@ namespace ConsoleArgumentParser
                     expectedType = typeof(Enum);
                 }
 
-                if (i == expectedParameters.Count - 1 && IsParams(expectedParameters[i]))
+                bool isParams = IsParams(expectedParameters[i]);
+
+                if (i == expectedParameters.Count - 1 && isParams)
                 {
                     List<object> paramList = new List<object>();
                     for (; i < args.Count; i++)
@@ -249,6 +250,12 @@ namespace ConsoleArgumentParser
 
                     parsedArgs.Add(paramList.ToArray());
                     break;
+                }
+
+                if (i == expectedParameters.Count - 1 && !isParams && args.Count > expectedParameters.Count)
+                {
+                    OnWrongCommandUsage(new ParserErrorArgs(currentcommmand, currentsubcommand));
+                    return null;
                 }
                 
                 if (!_typeParsingSwitch.ContainsKey(expectedType))
