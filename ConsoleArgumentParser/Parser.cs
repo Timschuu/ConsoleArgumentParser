@@ -13,15 +13,32 @@ namespace ConsoleArgumentParser
 {
     public class Parser
     {
+        /// <summary>
+        /// Gets invoked when a correct command is used but the arguments dont match the command signature
+        /// </summary>
         public event EventHandler<ParserErrorArgs> WrongCommandUsage;
+        /// <summary>
+        /// Gets invoked when a subcommand is used that does not exist for the given command
+        /// </summary>
         public event EventHandler<ParserErrorArgs> InvalidSubCommand;
+        /// <summary>
+        /// Gets invoked when an unknown command is used
+        /// </summary>
         public event EventHandler<EventArgs> UnknownCommand;
+        /// <summary>
+        /// Gets invoked when an argument couldnt get parsed to the expected type
+        /// </summary>
         public event EventHandler<ParserErrorArgs> ArgumentParsingError;
         
         private readonly List<Type> _registeredCommands;
         private readonly string _commandPrefix;
         private readonly string _subcommandPrefix;
 
+        /// <summary>
+        /// Creates a new instance of the ConsoleArgumentParser
+        /// </summary>
+        /// <param name="commandPrefix">The prefix to define commands</param>
+        /// <param name="subcommandPrefix">The prefix to define subcommands</param>
         public Parser(string commandPrefix, string subcommandPrefix)
         {
             _registeredCommands = new List<Type>();
@@ -29,6 +46,11 @@ namespace ConsoleArgumentParser
             _subcommandPrefix = subcommandPrefix;
         }
 
+        /// <summary>
+        /// Registers a command for this parser to use
+        /// </summary>
+        /// <param name="command">The classtype of the command</param>
+        /// <returns>True on success, otherwise false</returns>
         public bool RegisterCommand(Type command)
         {
             if (!command.IsClass || !command.GetInterfaces().Contains(typeof(ICommand)))
@@ -53,6 +75,10 @@ namespace ConsoleArgumentParser
             return output;
         }
 
+        /// <summary>
+        /// Generates a string containing a formatted helptext for all registered commands
+        /// </summary>
+        /// <returns>The helpstring</returns>
         public string GetHelpString()
         {
             string output = "";
@@ -108,6 +134,10 @@ namespace ConsoleArgumentParser
             return argslList;
         }
         
+        /// <summary>
+        /// Parses an entire user input including multiple commands
+        /// </summary>
+        /// <param name="args">The user input. Can be the command line args passed to main</param>
         public void ParseCommands(IEnumerable<string> args)
         {
             string[] arguments = args.ToArray();
@@ -117,6 +147,12 @@ namespace ConsoleArgumentParser
             }
         }
         
+        /// <summary>
+        /// Parses a single command. Command and arguments need to seperated first.
+        /// </summary>
+        /// <param name="command">The command name including the prefix</param>
+        /// <param name="arguments">The command parameters</param>
+        /// <returns></returns>
         public bool ParseCommand(string command, IEnumerable<string> arguments)
         {
             Type commandtype = _registeredCommands.FirstOrDefault(c => c.GetCustomAttributes(typeof(CommandAttribute), true)
@@ -178,8 +214,8 @@ namespace ConsoleArgumentParser
                 MethodInfo mi = cmd.GetType()
                     .GetMethods(BindingFlags.Instance | BindingFlags.NonPublic)
                     .FirstOrDefault(m => m
-                                             .GetCustomAttributes(typeof(CommandArgumentAttribute), true)
-                                             .FirstOrDefault(a => ((CommandArgumentAttribute) a)?.Name == subcommand) != null);
+                    .GetCustomAttributes(typeof(CommandArgumentAttribute), true)
+                    .FirstOrDefault(a => ((CommandArgumentAttribute) a)?.Name == subcommand) != null);
 
                 if (mi == null)
                 {
@@ -202,6 +238,12 @@ namespace ConsoleArgumentParser
             return true;
         }
 
+        /// <summary>
+        /// Adds a custom type parser to parse types that are not beeing handled by the library.
+        /// </summary>
+        /// <param name="type"></param>
+        /// <param name="parser"></param>
+        /// <returns></returns>
         public bool AddCustomTypeParser(Type type, ITypeParser parser)
         {
             if (_typeParsingSwitch.ContainsKey(type))
@@ -260,7 +302,7 @@ namespace ConsoleArgumentParser
                 
                 if (!_typeParsingSwitch.ContainsKey(expectedType))
                 {
-                    OnArgumentParsingError(new ParserErrorArgs(currentcommmand));
+                    OnArgumentParsingError(new ParserErrorArgs(currentcommmand, currentsubcommand));
                     return null;
                 }
                 
