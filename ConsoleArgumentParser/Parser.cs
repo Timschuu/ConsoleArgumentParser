@@ -152,7 +152,7 @@ namespace ConsoleArgumentParser
         /// </summary>
         /// <param name="command">The command name including the prefix</param>
         /// <param name="arguments">The command parameters</param>
-        /// <returns></returns>
+        /// <returns>True on success, otherwise false</returns>
         public bool ParseCommand(string command, IEnumerable<string> arguments)
         {
             Type commandtype = _registeredCommands.FirstOrDefault(c => c.GetCustomAttributes(typeof(CommandAttribute), true)
@@ -243,7 +243,7 @@ namespace ConsoleArgumentParser
         /// </summary>
         /// <param name="type"></param>
         /// <param name="parser"></param>
-        /// <returns></returns>
+        /// <returns>True on success, otherwise false</returns>
         public bool AddCustomTypeParser(Type type, ITypeParser parser)
         {
             if (_typeParsingSwitch.ContainsKey(type))
