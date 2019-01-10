@@ -274,12 +274,7 @@ namespace ConsoleArgumentParser
             for (int i = 0; i < args.Count; i++)
             {
                 Type expectedType = expectedParameters[i].ParameterType;
-                Type parsingTarget = expectedType;
-                if (expectedType.BaseType == typeof(Enum))
-                {
-                    expectedType = typeof(Enum);
-                }
-
+                
                 bool isParams = IsParams(expectedParameters[i]);
 
                 if (i == expectedParameters.Count - 1 && isParams)
@@ -306,7 +301,7 @@ namespace ConsoleArgumentParser
                     return null;
                 }
                 
-                if (!_typeParsingSwitch[expectedType].TryParse(args[i], parsingTarget, out var parsedPara))
+                if (!_typeParsingSwitch[expectedType].TryParse(args[i], expectedType, out var parsedPara))
                 {
                     OnArgumentParsingError(new ParserErrorArgs(currentcommmand, currentsubcommand));
                     return null;
