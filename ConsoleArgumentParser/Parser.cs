@@ -14,21 +14,17 @@ namespace ConsoleArgumentParser
     public class Parser
     {
         /// <summary>
-        /// Gets invoked when a correct command is used but the arguments dont match the command signature
+        /// Gets invoked when a correct command is used but the arguments do not match the command signature
         /// </summary>
         public event EventHandler<ParserErrorArgs> WrongCommandUsage;
         /// <summary>
-        /// Gets invoked when a subcommand is used that does not exist for the given command
+        /// Gets invoked when a subcommand is used that does not exist or the given arguments do not match
         /// </summary>
         public event EventHandler<ParserErrorArgs> InvalidSubCommand;
         /// <summary>
         /// Gets invoked when an unknown command is used
         /// </summary>
         public event EventHandler<EventArgs> UnknownCommand;
-        /// <summary>
-        /// Gets invoked when an argument couldnt get parsed to the expected type
-        /// </summary>
-        public event EventHandler<ParserErrorArgs> ArgumentParsingError;
         
         private readonly List<Type> _registeredCommands;
         private readonly string _commandPrefix;
@@ -61,7 +57,7 @@ namespace ConsoleArgumentParser
             return true;
         }
         
-        private IEnumerable<string> GetStringsUntilNextArgument(ref int i, List<string> args)
+        private IEnumerable<string> GetStringsUntilNextArgument(ref int i, IReadOnlyList<string> args)
         {
             List<string> output = new List<string>();
             i++;
@@ -163,10 +159,9 @@ namespace ConsoleArgumentParser
                 return false;
             }
             
-            ConstructorInfo constructorInfo = commandtype.GetConstructors()[0];
-
             List<string> arglist = arguments.ToList();
-            List<string> stringsuntilnextarg = new List<string>();
+            List<string> commandarguments = new List<string>();
+            
             int i;
             for (i = 0; i < arglist.Count; i++)
             {
@@ -175,18 +170,23 @@ namespace ConsoleArgumentParser
                     break;
                 }
 
-                stringsuntilnextarg.Add(arglist[i]);
+                commandarguments.Add(arglist[i]);
             }
             arglist.RemoveRange(0, i);
 
-            List<ParameterInfo> ctorParas = constructorInfo.GetParameters().ToList();
+            ConstructorInfo constructorInfo = GetCorrectOverload(commandtype.GetConstructors(), commandarguments) as ConstructorInfo;
 
-            object[] ctorInvokingArgs = ParseArguments(stringsuntilnextarg, ctorParas, command, null)?.ToArray();
-
-            if (ctorInvokingArgs == null)
+            if (constructorInfo == null)
             {
+                OnWrongCommandUsage(new ParserErrorArgs(command));
                 return false;
             }
+
+            List<ParameterInfo> ctorParas = constructorInfo.GetParameters().ToList();
+
+            object[] ctorInvokingArgs = ParseArguments(commandarguments, ctorParas)?.ToArray();
+
+            if (ctorInvokingArgs == null) return false;
             
             ICommand cmd = (ICommand) constructorInfo.Invoke(ctorInvokingArgs);
 
@@ -199,7 +199,44 @@ namespace ConsoleArgumentParser
             return true;
         }
 
-        private bool ParseSubCommands(List<string> arglist, string command, ICommand cmd)
+        private MethodBase GetCorrectOverload(IEnumerable<MethodBase> overloads, IReadOnlyList<string> args)
+        {
+            return overloads
+                .Where(c => c.GetParameters().Length <= args.Count)
+                .OrderBy(c =>  args.Count - c.GetParameters().Length)
+                .ThenBy(c => IncludesParams(c.GetParameters()))
+                .FirstOrDefault(c => CompareParameters(args, c.GetParameters()));
+        }
+
+        private static bool IncludesParams(IEnumerable<ParameterInfo> parameters)
+        {
+            return parameters.Any(IsParams);
+        }
+
+        private bool CompareParameters(IReadOnlyList<string> args, IReadOnlyList<ParameterInfo> expected)
+        {
+            if (args.Count < expected.Count)
+            {
+                return false;
+            }
+
+            for (int i = 0; i < expected.Count; i++)
+            {
+                if (i == expected.Count - 1 && IsParams(expected[i]))
+                {
+                    return true;
+                }
+                
+                if (ParseArgument(args[i], expected[i].ParameterType) == null)
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        private bool ParseSubCommands(IReadOnlyList<string> arglist, string command, ICommand cmd)
         {
             for (int j = 0; j < arglist.Count; j++)
             {
@@ -211,28 +248,38 @@ namespace ConsoleArgumentParser
                 }
 
                 List<string> subcommandargs = GetStringsUntilNextArgument(ref j, arglist).ToList();
-                MethodInfo mi = cmd.GetType()
+                
+                List<MethodInfo> methods = cmd.GetType()
                     .GetMethods(BindingFlags.Instance | BindingFlags.NonPublic)
-                    .FirstOrDefault(m => m
-                    .GetCustomAttributes(typeof(CommandArgumentAttribute), true)
-                    .FirstOrDefault(a => ((CommandArgumentAttribute) a)?.Name == subcommand) != null);
+                    .Where(m => m.GetCustomAttributes(typeof(CommandArgumentAttribute), true)
+                        .FirstOrDefault(a => ((CommandArgumentAttribute) a)?.Name == subcommand) != null)
+                    .ToList();
 
-                if (mi == null)
+                if (!methods.Any())
                 {
                     OnInvalidSubCommand( new ParserErrorArgs(command, subcommand));
                     return false;
                 }
                 
-                List<ParameterInfo> parameterInfos = mi.GetParameters().ToList();
+                MethodInfo methodInfo = GetCorrectOverload(methods, subcommandargs) as MethodInfo;
 
-                object[] invokingargs = ParseArguments(subcommandargs, parameterInfos, command, subcommand)?.ToArray();
-
-                if (invokingargs == null)
+                if (methodInfo == null)
                 {
+                    OnInvalidSubCommand( new ParserErrorArgs(command, subcommand));
                     return false;
                 }
                 
-                mi.Invoke(cmd, invokingargs);
+                List<ParameterInfo> parameterInfos = methodInfo.GetParameters().ToList();
+
+                object[] invokingargs = ParseArguments(subcommandargs, parameterInfos)?.ToArray();
+
+                if (invokingargs == null)
+                {
+                    OnInvalidSubCommand(new ParserErrorArgs(command, subcommand));
+                    return false;
+                }
+                
+                methodInfo.Invoke(cmd, invokingargs);
             }
 
             return true;
@@ -263,11 +310,10 @@ namespace ConsoleArgumentParser
             {typeof(bool), new BoolParser()}
         };
 
-        private List<object> ParseArguments(IReadOnlyList<string> args, IReadOnlyList<ParameterInfo> expectedParameters, string currentcommmand, string currentsubcommand)
+        private List<object> ParseArguments(IReadOnlyList<string> args, IReadOnlyList<ParameterInfo> expectedParameters)
         {
             if (args.Count < expectedParameters.Count)
             {
-                OnWrongCommandUsage(new ParserErrorArgs(currentcommmand, currentsubcommand));
                 return null;
             }
             List<object> parsedArgs = new List<object>();
@@ -291,35 +337,39 @@ namespace ConsoleArgumentParser
 
                 if (i == expectedParameters.Count - 1 && !isParams && args.Count > expectedParameters.Count)
                 {
-                    OnWrongCommandUsage(new ParserErrorArgs(currentcommmand, currentsubcommand));
+                    return null;
+                }
+
+                object parsedPara = ParseArgument(args[i], expectedType);
+                if (parsedPara == null)
+                {
                     return null;
                 }
                 
-                if (!_typeParsingSwitch.ContainsKey(expectedType))
-                {
-                    OnArgumentParsingError(new ParserErrorArgs(currentcommmand, currentsubcommand));
-                    return null;
-                }
-                
-                if (!_typeParsingSwitch[expectedType].TryParse(args[i], expectedType, out var parsedPara))
-                {
-                    OnArgumentParsingError(new ParserErrorArgs(currentcommmand, currentsubcommand));
-                    return null;
-                }
                 parsedArgs.Add(parsedPara);
             }
 
             return parsedArgs;
         }
+
+        private object ParseArgument(string argument, Type expectedType)
+        {
+            if (!_typeParsingSwitch.ContainsKey(expectedType))
+            {
+                return null;
+            }
+                
+            if (!_typeParsingSwitch[expectedType].TryParse(argument, expectedType, out var parsedPara))
+            {
+                return null;
+            }
+
+            return parsedPara;
+        }
         
         private static bool IsParams(ParameterInfo param)
         {
             return param.GetCustomAttributes(typeof (ParamArrayAttribute), false).Length > 0;
-        }
-
-        private void OnArgumentParsingError(ParserErrorArgs e)
-        {
-            ArgumentParsingError?.Invoke(this, e);
         }
         
         private void OnWrongCommandUsage(ParserErrorArgs e)

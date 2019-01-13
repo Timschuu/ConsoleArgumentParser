@@ -22,6 +22,11 @@ namespace ConsoleArgumentParserTestProgram
             _message = Array.ConvertAll(text, input => (string) input).Aggregate("", (current, next) => current + next + " ");
         }
 
+        public TestCommand(int i)
+        {
+            _message = "int";
+        }
+
         [CommandArgument("--color")]
         private void EnumSubCommand(ConsoleColor color)
         {
