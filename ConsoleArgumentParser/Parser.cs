@@ -86,13 +86,18 @@ namespace ConsoleArgumentParser
                 var subCommands = registeredCommand.GetSubCommands();
                 
                 line += commandattribute.Name + " ";
-                line = constructorInfos.Aggregate(line, (current, constructorInfo) => current + "(" + GetMethodParameterString(constructorInfo) + ") ");
-                line = line.Replace("() ", "");
+                line += GetMethodParameterString(constructorInfos[0]);
 
-                line = subCommands.Aggregate(line, (current, subCommand) => current + "[" + 
-                    subCommand.GetAttributeValue((CommandArgumentAttribute caa) => caa.Name) + 
-                    " " + GetMethodParameterString(subCommand) + "] ");
+                line = line.Trim();
+                if (constructorInfos.Length > 1)
+                {
+                    line += $" (and {constructorInfos.Length - 1} Overloads)";
+                }
 
+                line = subCommands.Aggregate(line, (current, subCommand) => current + " [" +
+                    subCommand.GetAttributeValue((CommandArgumentAttribute caa) => caa.Name) +
+                    " " + GetMethodParameterString(subCommand) + "]");
+                
                 line += "\n\t" + commandattribute.Description;
                 output += line + "\n";
             }
