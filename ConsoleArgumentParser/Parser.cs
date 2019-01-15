@@ -83,30 +83,17 @@ namespace ConsoleArgumentParser
                 string line = "";
                 string name = registeredCommand.GetAttributeValue((CommandAttribute ca) => ca.Name);
                 string description = registeredCommand.GetAttributeValue((CommandAttribute ca) => ca.Description);
-                ConstructorInfo constructorInfo = registeredCommand.GetConstructors()[0];
-                List<ParameterInfo> ctorparas = constructorInfo.GetParameters().ToList();
-
+                var constructorInfos = registeredCommand.GetConstructors();
+                
                 List<MethodInfo> subCommands = registeredCommand.GetSubCommands();
                 
                 line += name + " ";
-                foreach (var ctorpara in ctorparas)
-                {
-                    line += ctorpara.Name;
-                    if (IsParams(ctorpara))
-                    {
-                        line += "[s]";
-                    }
+                line = constructorInfos.Aggregate(line, (current, constructorInfo) => current + "(" + GetMethodParameterString(constructorInfo) + ") ");
+                line = line.Replace("() ", "");
 
-                    line += " ";
-                }
-
-                foreach (var subCommand in subCommands)
-                {
-                    line += $"[{subCommand.GetAttributeValue((CommandArgumentAttribute caa) => caa.Name)} ";
-                    line = subCommand.GetParameters().Aggregate(line, (current, parameter) => current + parameter.Name + " ");
-                    line = line.Trim();
-                    line += "] ";
-                }
+                line = subCommands.Aggregate(line, (current, subCommand) => current + "[" + 
+                    subCommand.GetAttributeValue((CommandArgumentAttribute caa) => caa.Name) + 
+                    " " + GetMethodParameterString(subCommand) + "] ");
 
                 line += "\n\t";
                 line += description;
@@ -116,6 +103,59 @@ namespace ConsoleArgumentParser
             return output;
         }
 
+        private static string GetMethodParameterString(MethodBase method)
+        {
+            string output = "";
+            var ctorparas = method.GetParameters();
+            foreach (var ctorpara in ctorparas)
+            {
+                output += ctorpara.Name;
+                if (IsParams(ctorpara))
+                {
+                    output += "[s]";
+                }
+
+                output += " ";
+
+            }
+
+            return output.Trim();
+        }
+
+        public string GetHelpString(string command)
+        {
+            if (command.StartsWith(_commandPrefix))
+            {
+                command = command.Replace(_commandPrefix, "");
+            }
+
+            Type commandtype = _registeredCommands.FirstOrDefault(c => c.GetAttributeValue((CommandAttribute ca) => ca.Name) == _commandPrefix + command);
+            if (commandtype == null)
+            {
+                return "";
+            }
+
+            string output = "Command: " + command + "\n";
+            output += commandtype.GetAttributeValue((CommandAttribute ca) => ca.Description) + "\n";
+            
+            var constructors = commandtype.GetConstructors();
+            output += constructors.Length + " Overloads\n";
+           
+            output = constructors.Aggregate(output,
+                (current, constructor) => current + _commandPrefix + command + " " + GetMethodParameterString(constructor) + "\n");
+
+            output += "\nArguments:\n";
+
+            var subcommands = commandtype.GetSubCommands();
+            
+            output = subcommands.Aggregate(output, (current, subCommand) => current + "[" + 
+                subCommand.GetAttributeValue((CommandArgumentAttribute caa) => caa.Name) + 
+                " " + GetMethodParameterString(subCommand) + "] " +
+                subCommand.GetAttributeValue((CommandArgumentAttribute caa) => caa.Description) +"\n");
+
+            return output;
+        }
+        
         private IEnumerable<string> GetArgsUntilNextArgument(ref int i, IReadOnlyList<string> args)
         {
             List<string> argslList = new List<string>();

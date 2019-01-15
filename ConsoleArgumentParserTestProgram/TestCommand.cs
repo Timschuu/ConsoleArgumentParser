@@ -22,21 +22,27 @@ namespace ConsoleArgumentParserTestProgram
             _message = Array.ConvertAll(text, input => (string) input).Aggregate("", (current, next) => current + next + " ");
         }
 
-        public TestCommand(int i)
+        public TestCommand(int someinteger)
         {
             _message = "int";
         }
 
-        [CommandArgument("--color")]
+        [CommandArgument("--color", "Sets the color of the text.")]
         private void EnumSubCommand(ConsoleColor color)
         {
             _color = color;
         }
 
-        [CommandArgument("--int")]
+        [CommandArgument("--int", "Adds  two integers.")]
         private void IntSubCommand(int int1, int int2)
         {
             Console.WriteLine(int1 + int2);
+        }
+        
+        [CommandArgument("--int", "Adds three integers.")]
+        private void IntSubCommand(int int1, int int2, int int3)
+        {
+            Console.WriteLine(int1 + int2 + int3);
         }
     }
 }

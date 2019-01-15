@@ -8,12 +8,7 @@ namespace ConsoleArgumentParser
         
         public string Description { get; set; }
 
-        public CommandAttribute(string name)
-        {
-            Name = name;
-        }
-
-        public CommandAttribute(string name, string description)
+        public CommandAttribute(string name, string description = "")
         {
             Name = name;
             Description = description;
