@@ -3,12 +3,19 @@ using ConsoleArgumentParser.Interfaces;
 
 namespace ConsoleArgumentParser.TypeParsers
 {
-    public class FloatParser : ITypeParser
+    public class PrimitiveParser<T> : ITypeParser
     {
+        private readonly ParserDelegate<T> _parser;
+
+        public PrimitiveParser(ParserDelegate<T> parser)
+        {
+            _parser = parser;
+        }
+        
         public bool TryParse(string s, Type targettype, out object value)
         {
             value = default(object);
-            if (!float.TryParse(s, out float val))
+            if (!_parser(s, out T val))
             {
                 return false;
             }
