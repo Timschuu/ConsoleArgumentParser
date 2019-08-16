@@ -11,11 +11,11 @@ namespace ConsoleArgumentParser.TypeParsers
         {
             _parser = parser;
         }
-        
+
         public bool TryParse(string s, Type targettype, out object value)
         {
-            value = default(object);
-            if (!_parser(s, out T val))
+            value = default;
+            if (!_parser(s, out var val))
             {
                 return false;
             }

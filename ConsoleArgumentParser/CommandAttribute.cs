@@ -4,9 +4,9 @@ namespace ConsoleArgumentParser
 {
     public class CommandAttribute : Attribute
     {
-        public string Name { get; set; }
-        
-        public string Description { get; set; }
+        public string Name { get; }
+
+        public string Description { get; }
 
         public CommandAttribute(string name, string description = "")
         {

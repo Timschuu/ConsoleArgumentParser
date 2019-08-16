@@ -6,7 +6,7 @@ using System.Reflection;
 namespace ConsoleArgumentParser.Extensions
 {
     public static class AttributeExtensions
-    {   
+    {
         public static TValue GetAttributeValue<TAttribute, TValue>(this ICustomAttributeProvider provider, Func<TAttribute, TValue> valueSelector)
             where TAttribute : Attribute
         {
@@ -14,9 +14,9 @@ namespace ConsoleArgumentParser.Extensions
             {
                 return valueSelector(att);
             }
-            return default(TValue);
+            return default;
         }
-        
+
         public static TAttribute GetAttribute<TAttribute>(this ICustomAttributeProvider provider) where TAttribute : Attribute
         {
             if (provider.GetCustomAttributes(typeof(TAttribute), true).FirstOrDefault() is TAttribute att)
@@ -24,7 +24,7 @@ namespace ConsoleArgumentParser.Extensions
                 return att;
             }
 
-            return default(TAttribute);
+            return default;
         }
 
         public static IEnumerable<MethodInfo> GetSubCommands(this Type command)
